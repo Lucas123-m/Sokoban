@@ -26,13 +26,13 @@ def obtener_tamaño(grilla):
     grilla_formateada = formatear_nivel(grilla)
     return soko.dimensiones(grilla_formateada)
 
-def configurar_ventana(d):
-    tamaño_x,tamaño_y = obtener_tamaño(d["nivel"])
+def configurar_ventana(juego):
+    tamaño_x,tamaño_y = obtener_tamaño(juego["nivel"])
     if tamaño_y * TAMAÑO_IMAGEN > TAMAÑO_MAX_Y or tamaño_x * TAMAÑO_IMAGEN > TAMAÑO_MAX_X:
-        d["num_nivel_actual"] += 1
-        d["condicion_inicio"] = True
+        juego["num_nivel_actual"] += 1
+        juego["condicion_inicio"] = True
     else:
-        d["condicion_inicio"] = False
+        juego["condicion_inicio"] = False
         gamelib.resize(tamaño_x * TAMAÑO_IMAGEN,tamaño_y * TAMAÑO_IMAGEN)
 
 def formatear_nivel(nivel):
@@ -91,61 +91,61 @@ def obtener_direccion(tecla,teclas_config):
     direccion = direcciones[teclas_config[tecla]]
     return direccion
 
-def rehacer_deshacer_movimientos(accion,d):
+def rehacer_deshacer_movimientos(accion,juego):
     if accion == "DESHACER":
-        if not d["estados_deshacer"].esta_vacia():
-            d["estados_rehacer"].apilar(d["nivel"])
-            d["nivel"] = d["estados_deshacer"].desapilar()
+        if not juego["estados_deshacer"].esta_vacia():
+            juego["estados_rehacer"].apilar(juego["nivel"])
+            juego["nivel"] = juego["estados_deshacer"].desapilar()
     else:
-        if not d["estados_rehacer"].esta_vacia():
-            d["estados_deshacer"].apilar(d["nivel"])
-            d["nivel"] = d["estados_rehacer"].desapilar()   
+        if not juego["estados_rehacer"].esta_vacia():
+            juego["estados_deshacer"].apilar(juego["nivel"])
+            juego["nivel"] = juego["estados_rehacer"].desapilar()   
 
-def iniciar_nivel(d):
-    if not d["num_nivel_actual"] in d["niveles"]:
+def iniciar_nivel(juego):
+    if not juego["num_nivel_actual"] in juego["niveles"]:
         gamelib.say("\n¡Has finalizado todos los niveles, felicidades!")
-        d["condicion_juego_terminado"] = True
+        juego["condicion_juego_terminado"] = True
         return
-    if not d["condicion_reinicio"]:
-        gamelib.say(f"\n¡Comienza el nivel {d['num_nivel_actual']}!\n")
+    if not juego["condicion_reinicio"]:
+        gamelib.say(f"\n¡Comienza el nivel {juego['num_nivel_actual']}!\n")
         
-    d["nivel"] = soko.crear_grilla(d["niveles"][d["num_nivel_actual"]])
+    juego["nivel"] = soko.crear_grilla(juego["niveles"][juego["num_nivel_actual"]])
     #Configuro el tamaño de la ventana segun el nivel. Si la ventana no entra
     #en mi pantalla, paso al siguiente nivel, poniendo condicion de inicio como True.
-    configurar_ventana(d)
-    if d["condicion_inicio"]:
-        msg = f"El nivel {d['num_nivel_actual']-1} es muy grande y no entra en la pantalla,"
+    configurar_ventana(juego)
+    if juego["condicion_inicio"]:
+        msg = f"El nivel {juego['num_nivel_actual']-1} es muy grande y no entra en la pantalla,"
         msg += " se pasará automáticamente al siguiente nivel."
         gamelib.say(msg)
         return
-    d["condicion_reinicio"] = False
-    d["condicion_pistas"] = False
-    d["pistas"] = Cola()
-    d["estados_rehacer"] = Pila()
-    d["estados_deshacer"] = Pila()
+    juego["condicion_reinicio"] = False
+    juego["condicion_pistas"] = False
+    juego["pistas"] = Cola()
+    juego["estados_rehacer"] = Pila()
+    juego["estados_deshacer"] = Pila()
 
-def nivel_terminado(d):
-    gamelib.say(f"¡Felicidades has terminado el nivel {d['num_nivel_actual']}!")
-    d["condicion_inicio"] = True
-    d["num_nivel_actual"] += 1
+def nivel_terminado(juego):
+    gamelib.say(f"¡Felicidades has terminado el nivel {juego['num_nivel_actual']}!")
+    juego["condicion_inicio"] = True
+    juego["num_nivel_actual"] += 1
 
-def acciones_especiales(accion,d):
+def acciones_especiales(accion,juego):
     if accion == "REINICIAR":
-        d["condicion_reinicio"] = True
+        juego["condicion_reinicio"] = True
     elif accion in ["DESHACER","REHACER"]:
-        rehacer_deshacer_movimientos(accion,d)
-        calculo_pistas.comprobar_estado_pistas((-2,-2),d)
+        rehacer_deshacer_movimientos(accion,juego)
+        calculo_pistas.comprobar_estado_pistas((-2,-2),juego)
     elif accion == "PISTA":
-        calculo_pistas.comprobar_pistas(d)
+        calculo_pistas.comprobar_pistas(juego)
     else:
         pass
 
-def realizar_jugada(d,tecla_presionada):
-    d["estados_rehacer"] = Pila()
-    d["estados_deshacer"].apilar(d["nivel"])
-    direccion = obtener_direccion(tecla_presionada,d["teclas_config"])
-    calculo_pistas.comprobar_estado_pistas(direccion,d)
-    d["nivel"] = soko.mover(d["nivel"],direccion)
+def realizar_jugada(juego,tecla_presionada):
+    juego["estados_rehacer"] = Pila()
+    juego["estados_deshacer"].apilar(juego["nivel"])
+    direccion = obtener_direccion(tecla_presionada,juego["teclas_config"])
+    calculo_pistas.comprobar_estado_pistas(direccion,juego)
+    juego["nivel"] = soko.mover(juego["nivel"],direccion)
 
 def main():
     try:
@@ -154,36 +154,36 @@ def main():
     except Exception as e:
         gamelib.say(e)
         return
-    d = {"num_nivel_actual":1,"condicion_inicio":True,"condicion_reinicio":False,"nivel":[],
+    juego = {"num_nivel_actual":1,"condicion_inicio":True,"condicion_reinicio":False,"nivel":[],
     "estados_deshacer":Pila(),"estados_rehacer":Pila(),
     "pistas_disponibles":False,"pistas":Cola(),"condicion_pistas":False,
     "teclas_config":teclas,"niveles":niveles,"condicion_juego_terminado": False}
 
     while gamelib.is_alive():
-        if d["condicion_inicio"] or d["condicion_reinicio"]:
-            if d["condicion_juego_terminado"]:
+        if juego["condicion_inicio"] or juego["condicion_reinicio"]:
+            if juego["condicion_juego_terminado"]:
                 return
-            iniciar_nivel(d)
+            iniciar_nivel(juego)
             continue
 
-        if soko.juego_ganado(d["nivel"]):
-            nivel_terminado(d)
+        if soko.juego_ganado(juego["nivel"]):
+            nivel_terminado(juego)
             continue
 
-        dibujar_nivel(d["nivel"])
+        dibujar_nivel(juego["nivel"])
 
         ev = gamelib.wait(gamelib.EventType.KeyPress)
         if not ev:
             return
         tecla_presionada = ev.key
-        accion = d["teclas_config"].get(tecla_presionada,"")
+        accion = juego["teclas_config"].get(tecla_presionada,"")
         if accion == "SALIR":
             gamelib.say("Has salido del juego correctamente.")
             return
         if accion in ["REINICIAR","DESHACER","REHACER","PISTA",""]:
-            acciones_especiales(accion,d)
+            acciones_especiales(accion,juego)
             continue
-        realizar_jugada(d,tecla_presionada)
+        realizar_jugada(juego,tecla_presionada)
 
 gamelib.init(main)
 
